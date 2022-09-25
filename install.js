@@ -128,8 +128,8 @@ function onProgress(deltaBytes, totalBytes) {
 
 function checkToolsDir(toolsPath) {
   if (!fs.existsSync(toolsPath)) return false;
-  const adbCmd = `${path(toolsPath, 'adb')} --help`;
-  const fastbootCmd = `${path(toolsPath, 'fastboot')} --help`;
+  const adbCmd = `${path.join(toolsPath, 'adb')} --help`;
+  const fastbootCmd = `${path.join(toolsPath, 'fastboot')} --help`;
   try {
     child_process.execSync(adbCmd);
     child_process.execSync(fastbootCmd);

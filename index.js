@@ -10,7 +10,7 @@ const getAndroidSdkToolsPath = (type) => {
   };
   if (!typeMap[type]) {
     throw new Error('Type arg error');
-  };
+  }
   var platform = process.env.npm_config_platform || os.platform();
   if (platform !== 'darwin' && platform !== 'linux' && platform !== 'win32') {
     throw new Error('Current platform is not supported');
