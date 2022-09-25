@@ -1,39 +1,23 @@
 'use strict'
 
-var fs = require("fs");
+var fs = require("fs-extra");
+var path = require("path");
 var os = require("os");
-const {encode: encodeQuery} = require('querystring')
-const {strictEqual} = require('assert')
-const envPaths = require('env-paths')
-const FileCache = require('@derhuerst/http-basic/lib/FileCache').default
-const {extname} = require('path')
+var child_process = require("child_process");
+const {encode: encodeQuery} = require('querystring');
+const {strictEqual} = require('assert');
+const envPaths = require('env-paths');
+const FileCache = require('@derhuerst/http-basic/lib/FileCache').default;
 var ProgressBar = require("progress");
-var request = require('@derhuerst/http-basic')
-const {createGunzip} = require('zlib')
-const {pipeline} = require('stream')
-var ffmpegPath = require(".");
+var request = require('@derhuerst/http-basic');
+const {pipeline} = require('stream');
+const extract = require('extract-zip');
 var pkg = require("./package");
+var toolsPath = '';
 
 const exitOnError = (err) => {
   console.error(err)
   process.exit(1)
-}
-const exitOnErrorOrWarnWith = (msg) => (err) => {
-  if (err.statusCode === 404) console.warn(msg)
-  else exitOnError(err)
-}
-
-if (!ffmpegPath) {
-  exitOnError('ffmpeg-static install failed: No binary found for architecture')
-}
-
-try {
-  if (fs.statSync(ffmpegPath).isFile()) {
-    console.info('ffmpeg is installed already.')
-    process.exit(0)
-  }
-} catch (err) {
-  if (err && err.code !== 'ENOENT') exitOnError(err)
 }
 
 let agent = false
@@ -74,12 +58,6 @@ cache.getCacheKey = (url) => {
   return FileCache.prototype.getCacheKey(normalizeS3Url(url))
 }
 
-const isGzUrl = (url) => {
-  const path = new URL(url).pathname.split('/')
-  const filename = path[path.length - 1]
-  return filename && extname(filename) === '.gz'
-}
-
 const noop = () => {}
 function downloadFile(url, destinationPath, progressCallback = noop) {
   let fulfill, reject;
@@ -94,7 +72,6 @@ function downloadFile(url, destinationPath, progressCallback = noop) {
     agent,
     followRedirects: true,
     maxRedirects: 3,
-    gzip: true,
     cache,
     timeout: 30 * 1000, // 30s
     retry: true,
@@ -109,12 +86,9 @@ function downloadFile(url, destinationPath, progressCallback = noop) {
       return;
     }
 
-    const file = fs.createWriteStream(destinationPath);
-    const streams = isGzUrl(url)
-      ? [response.body, createGunzip(), file]
-      : [response.body, file]
     pipeline(
-      ...streams,
+      response.body,
+      fs.createWriteStream(destinationPath),
       (err) => {
         if (err) {
           err.url = response.url
@@ -141,7 +115,7 @@ function onProgress(deltaBytes, totalBytes) {
   if (process.env.CI) return;
   if (totalBytes === null) return;
   if (!progressBar) {
-    progressBar = new ProgressBar(`Downloading ffmpeg ${releaseName} [:bar] :percent :etas `, {
+    progressBar = new ProgressBar(`Downloading android-sdk-tools ${releaseName} [:bar] :percent :etas `, {
       complete: "|",
       incomplete: " ",
       width: 20,
@@ -152,33 +126,75 @@ function onProgress(deltaBytes, totalBytes) {
   progressBar.tick(deltaBytes);
 }
 
+function checkToolsDir(toolsPath) {
+  if (!fs.existsSync(toolsPath)) return false;
+  const adbCmd = `${path(toolsPath, 'adb')} --help`;
+  const fastbootCmd = `${path(toolsPath, 'fastboot')} --help`;
+  try {
+    child_process.execSync(adbCmd);
+    child_process.execSync(fastbootCmd);
+    return true;
+  } catch (error) {
+    // remove sdk dir
+    fs.removeSync(toolsPath);
+    return false;
+  }
+}
+
+function chmodDirSync(target, mode) {
+  console.log(target)
+  const fsStat = fs.statSync(target);
+  const isDir = fsStat.isDirectory();
+  if (isDir) {
+    const dirArr = fs.readdirSync(target);
+    console.log(dirArr);
+    for (let index = 0; index < dirArr.length; index++) {
+      const src = dirArr[index];
+      chmodDirSync(path.join(target, src), mode);
+    }
+  } else {
+    fs.chmodSync(target, mode)
+  }
+}
+
 const release = (
-  process.env.FFMPEG_BINARY_RELEASE ||
-  pkg['ffmpeg-static']['binary-release-tag']
+  process.env.ANDROID_SDK_TOOLS_BINARIES_RELEASE ||
+  pkg['android-sdk-tools-installer']['binary-release-tag']
 )
 const releaseName = (
-  pkg['ffmpeg-static']['binary-release-name'] ||
+  pkg['android-sdk-tools-installer']['binary-release-name'] ||
   release
 )
-const arch = process.env.npm_config_arch || os.arch()
 const platform = process.env.npm_config_platform || os.platform()
 const downloadsUrl = (
-	process.env.FFMPEG_BINARIES_URL ||
-	'https://github.com/eugeneware/ffmpeg-static/releases/download'
+	process.env.ANDROID_SDK_TOOLS_BINARIES_URL ||
+	'https://github.com/blogwy/android-sdk-tools-installer/releases/download'
 )
-const baseUrl = `${downloadsUrl}/${release}`
-const downloadUrl = `${baseUrl}/${platform}-${arch}.gz`
-const readmeUrl = `${baseUrl}/${platform}-${arch}.README`
-const licenseUrl = `${baseUrl}/${platform}-${arch}.LICENSE`
+const baseUrl = `${downloadsUrl}/${release}`;
+const downloadUrl = `${baseUrl}/${platform}.zip`;
 
-downloadFile(downloadUrl, ffmpegPath, onProgress)
-.then(() => {
-  fs.chmodSync(ffmpegPath, 0o755) // make executable
-})
-.catch(exitOnError)
+toolsPath = path.join(__dirname, platform);
 
-.then(() => downloadFile(readmeUrl, `${ffmpegPath}.README`))
-.catch(exitOnErrorOrWarnWith('Failed to download the ffmpeg README.'))
+const res = checkToolsDir(toolsPath);
 
-.then(() => downloadFile(licenseUrl, `${ffmpegPath}.LICENSE`))
-.catch(exitOnErrorOrWarnWith('Failed to download the ffmpeg LICENSE.'))
+if (!res) {
+  downloadFile(downloadUrl, `${toolsPath}.zip`, onProgress)
+    .then(async () => {
+      console.log('success')
+      // extract
+      await extract(`${toolsPath}.zip`, { dir: toolsPath });
+      // move
+      const dirArr = fs.readdirSync(toolsPath);
+      if (dirArr.length === 1) {
+        const src = path.join(toolsPath, dirArr[0]);
+        fs.copySync(src, toolsPath, { overwrite: true });
+        fs.removeSync(src);
+      }
+      // chmod
+      chmodDirSync(toolsPath, 0o755);
+      // del origin
+      fs.removeSync(`${toolsPath}.zip`);
+    })
+    .catch(exitOnError)
+}
+

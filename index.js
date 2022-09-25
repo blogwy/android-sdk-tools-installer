@@ -1,29 +1,41 @@
 'use strict'
 
-if (process.env.FFMPEG_BIN) {
-  module.exports = process.env.FFMPEG_BIN
-} else {
-  var os = require('os')
-  var path = require('path')
+var os = require('os');
+var path = require('path');
 
-  var binaries = Object.assign(Object.create(null), {
-    darwin: ['x64', 'arm64'],
-    freebsd: ['x64'],
-    linux: ['x64', 'ia32', 'arm64', 'arm'],
-    win32: ['x64', 'ia32']
-  })
-
-  var platform = process.env.npm_config_platform || os.platform()
-  var arch = process.env.npm_config_arch || os.arch()
-
-  var ffmpegPath = path.join(
-    __dirname,
-    platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg'
-  )
-
-  if (!binaries[platform] || binaries[platform].indexOf(arch) === -1) {
-    ffmpegPath = null
+const getAndroidSdkToolsPath = (type) => {
+  const typeMap = {
+    adb: 'adb',
+    fastboot: 'fastboot'
+  };
+  if (!typeMap[type]) {
+    throw new Error('Type arg error');
+  };
+  var platform = process.env.npm_config_platform || os.platform();
+  if (platform !== 'darwin' && platform !== 'linux' && platform !== 'win32') {
+    throw new Error('Current platform is not supported');
   }
+  var toolsPath = path.join(
+    __dirname,
+    platform,
+    platform === 'win32' ? `${typeMap[type]}.exe` : typeMap[type]
+  );
+  return toolsPath;
+}
 
-  module.exports = ffmpegPath
+const getAndroidSdkToolsDir = () => {
+  var platform = process.env.npm_config_platform || os.platform();
+  if (platform !== 'darwin' && platform !== 'linux' && platform !== 'win32') {
+    throw new Error('Current platform is not supported');
+  }
+  var toolsDir = path.join(
+    __dirname,
+    platform
+  );
+  return toolsDir;
+}
+
+module.exports = {
+  getAndroidSdkToolsPath,
+  getAndroidSdkToolsDir
 }

@@ -1,2 +1,3 @@
-declare const ffmpegPath: string | null;
-export default ffmpegPath;
+export function getAndroidSdkToolsPath(type: 'adb' | 'fastboot'): string;
+
+export function getAndroidSdkToolsDir(): string;

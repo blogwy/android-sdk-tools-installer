@@ -4,23 +4,50 @@ const {ok, strictEqual} = require('assert')
 const {isAbsolute} = require('path')
 const fs = require('fs')
 const {spawnSync} = require('child_process')
-const shell = require('any-shell-escape')
-const ffmpegPath = require('.')
+const { getAndroidSdkToolsDir, getAndroidSdkToolsPath } = require('.')
 
-console.info('TAP version 12')
-console.info('1..4')
+console.info('1..10')
 
-ok(isAbsolute(ffmpegPath))
-console.info('ok 1 - ffmpeg path is absolute')
+const adbPath = getAndroidSdkToolsPath('adb');
+const fastbootPath = getAndroidSdkToolsPath('fastboot');
+const toolsDir = getAndroidSdkToolsDir();
 
-ok(fs.statSync(ffmpegPath).isFile(ffmpegPath))
-console.info(`ok 2 - ${ffmpegPath} is a file`)
+// absolute path
+ok(isAbsolute(adbPath))
+console.info('ok 1 -adb path is absolute')
 
-fs.accessSync(ffmpegPath, fs.constants.X_OK)
-console.info(`ok 3 - ${ffmpegPath} is executable`)
+ok(isAbsolute(fastbootPath))
+console.info('ok 2 -fastboot path is absolute')
 
-const {status} = spawnSync(ffmpegPath, ['--help'], {
-	stdio: ['ignore', 'ignore', 'pipe'], // stdin, stdout, stderr
+ok(isAbsolute(toolsDir))
+console.info('ok 3 -tools dir is absolute')
+
+// file dir
+ok(fs.statSync(adbPath).isFile(adbPath))
+console.info(`ok 4 - ${adbPath} is a file`)
+
+ok(fs.statSync(fastbootPath).isFile(fastbootPath))
+console.info(`ok 5 - ${fastbootPath} is a file`)
+
+ok(fs.statSync(toolsDir).isDirectory(toolsDir))
+console.info(`ok 6 - ${toolsDir} is a dir`)
+
+// executable
+fs.accessSync(adbPath, fs.constants.X_OK)
+console.info(`ok 7 - ${adbPath} is executable`)
+
+fs.accessSync(fastbootPath, fs.constants.X_OK)
+console.info(`ok 8 - ${fastbootPath} is executable`)
+
+// cmd
+const { status: adbStatus } = spawnSync(adbPath, ['--help'], {
+	stdio: ['ignore', 'ignore', 'pipe'],
 })
-strictEqual(status, 0)
-console.info(`ok 4 - \`${ffmpegPath} --help\` works`)
+strictEqual(adbStatus, 0)
+console.info(`ok 9 - \`${adbPath} --help\` works`)
+
+const { status: fastbootStatus } = spawnSync(fastbootPath, ['--help'], {
+	stdio: ['ignore', 'ignore', 'pipe'],
+})
+strictEqual(fastbootStatus, 0)
+console.info(`ok 10 - \`${fastbootPath} --help\` works`)
