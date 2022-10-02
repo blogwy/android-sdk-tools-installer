@@ -1,6 +1,6 @@
 {
   "name": "android-sdk-tools-installer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "android sdk tools binaries for Mac OSX and Linux and Windows",
   "main": "index.js",
   "files": [
