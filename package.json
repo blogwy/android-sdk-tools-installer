@@ -1,6 +1,6 @@
 {
   "name": "android-sdk-tools-installer",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "android sdk tools binaries for Mac OSX and Linux and Windows",
   "main": "index.js",
   "files": [
@@ -16,8 +16,8 @@
     "prepublishOnly": "npm run lint && npm run install && npm test"
   },
   "android-sdk-tools-installer": {
-    "binary-release-tag": "34.0.1",
-    "binary-release-name": "34.0.1"
+    "binary-release-tag": "35.0.2",
+    "binary-release-name": "35.0.2"
   },
   "repository": {
     "type": "git",

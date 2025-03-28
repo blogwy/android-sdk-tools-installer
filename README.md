@@ -10,14 +10,14 @@ This module is installed via npm:
 $ npm install android-sdk-tools-installer
 ```
 
-*Note:* During installation, it will download the appropriate `android-sdk-tools` binary from the [`34.0.1` GitHub release](https://github.com/blogwy/android-sdk-tools-installer/releases/tag/34.0.1)
+*Note:* During installation, it will download the appropriate `android-sdk-tools` binary from the [`35.0.2` GitHub release](https://github.com/blogwy/android-sdk-tools-installer/releases/tag/35.0.2)
 
 ## Custom binaries url
 
 By default, the `android-sdk-tools` binary will get downloaded from `https://github.com/blogwy/android-sdk-tools-installer/releases/download`. To customise this, e.g. when using a mirror, set the `ANDROID_SDK_TOOLS_BINARIES_URL` environment variable.
 
 ```shell
-export ANDROID_SDK_TOOLS_BINARIES_URL=https://ghproxy.com/https://github.com/blogwy/android-sdk-tools-installer/releases/download
+export ANDROID_SDK_TOOLS_BINARIES_URL=https://gh-proxy.com/https://github.com/blogwy/android-sdk-tools-installer/releases/download
 ```
 
 ## Custom Android SDK Tools Version
@@ -25,7 +25,7 @@ export ANDROID_SDK_TOOLS_BINARIES_URL=https://ghproxy.com/https://github.com/blo
 By default, the version downloaded by Android SDK Tools comes from the binary-release-tag value in the package.json file, of course you can customize。set the `ANDROID_SDK_TOOLS_BINARIES_RELEASE` environment variable. however, since it is downloaded from GitHub Release, the custom ANDROID_SDK_TOOLS_BINARIES_RELEASE value must be the existing tag name of [GitHub Release](https://github.com/blogwy/android-sdk-tools-installer/releases)
 
 ```shell
-export ANDROID_SDK_TOOLS_BINARIES_RELEASE=34.0.1
+export ANDROID_SDK_TOOLS_BINARIES_RELEASE=35.0.2
 ```
 
 ## Electron & other cross-platform packaging tools
